@@ -1,0 +1,1 @@
+ALTER TABLE inquiries ALTER COLUMN headcount TYPE VARCHAR(50) USING headcount::VARCHAR;

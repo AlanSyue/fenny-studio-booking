@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: fenny
+      POSTGRES_PASSWORD: fenny
+      POSTGRES_DB: fenny_booking
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/db/migrations:/docker-entrypoint-initdb.d
+
+volumes:
+  pgdata:
