@@ -9,12 +9,17 @@ import (
 	"github.com/AlanSyue/fenny-studio-booking/backend/db"
 	"github.com/AlanSyue/fenny-studio-booking/backend/handler"
 	"github.com/AlanSyue/fenny-studio-booking/backend/middleware"
+	"github.com/AlanSyue/fenny-studio-booking/backend/service"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env if present (silently ignore if not found — production will use real env vars)
+	_ = godotenv.Load()
+
 	cfg := config.Load()
 
 	pool, err := db.Connect(cfg.DatabaseURL)
@@ -23,8 +28,10 @@ func main() {
 	}
 	defer pool.Close()
 
+	wooClient := service.New(cfg)
+
 	authHandler := handler.NewAuthHandler(pool, cfg)
-	courseHandler := handler.NewCourseHandler(pool, cfg)
+	courseHandler := handler.NewCourseHandler(pool, cfg, wooClient)
 	inquiryHandler := handler.NewInquiryHandler(pool)
 	ogImageHandler := handler.NewOGImageHandler(cfg)
 
@@ -55,6 +62,7 @@ func main() {
 		r.Post("/courses", courseHandler.Create)
 		r.Put("/courses/{id}", courseHandler.Update)
 		r.Delete("/courses/{id}", courseHandler.Delete)
+		r.Post("/courses/sync-woocommerce", courseHandler.SyncFromWoo)
 
 		r.Post("/fetch-image", ogImageHandler.FetchFromURL)
 

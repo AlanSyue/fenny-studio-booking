@@ -86,6 +86,8 @@ export default function InquiryList() {
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">課程</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">人數</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">地點</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">預算</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">其他聯絡方式</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">提交時間</th>
                 </tr>
@@ -107,8 +109,39 @@ export default function InquiryList() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{inq.name || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{inq.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{inq.course_name || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      <div className="flex flex-wrap gap-1">
+                        {inq.courses && inq.courses.length > 0 ? (
+                          inq.courses.map((c) => (
+                            <span
+                              key={c.id}
+                              className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium"
+                            >
+                              {c.name}
+                            </span>
+                          ))
+                        ) : inq.course_name ? (
+                          <span className="inline-block px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                            {inq.course_name}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{inq.headcount ?? '-'}</td>
+                    <td
+                      className="px-4 py-3 text-sm text-gray-900 max-w-[180px] truncate"
+                      title={inq.address || undefined}
+                    >
+                      {(() => {
+                        const loc = `${inq.city ?? ''} ${inq.district ?? ''}`.trim()
+                        return loc || '—'
+                      })()}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 max-w-[200px] truncate" title={inq.budget || undefined}>
+                      {inq.budget || '—'}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">{inq.additional_contact || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{formatDate(inq.created_at)}</td>
                   </tr>
