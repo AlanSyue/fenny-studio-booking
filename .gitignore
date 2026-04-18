@@ -24,3 +24,6 @@ test-results/
 
 # Docker
 pgdata/
+
+# Local deploy script (contains server IP)
+deploy.sh

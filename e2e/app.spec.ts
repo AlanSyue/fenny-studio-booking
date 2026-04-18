@@ -49,7 +49,7 @@ test.describe('後台登入', () => {
 
   test('正確帳密應導向課程管理頁', async ({ page }) => {
     await page.goto('/admin/login')
-    await page.fill('input[type="text"]', 'admin')
+    await page.fill('input[type="text"]', 'fenny_studio_super_admin')
     await page.fill('input[type="password"]', 'admin123')
     await page.click('button[type="submit"]')
     await page.waitForURL('**/admin/courses', { timeout: 5000 })
@@ -66,7 +66,7 @@ test.describe('後台課程管理', () => {
   test.beforeEach(async ({ page }) => {
     // Login first
     await page.goto('/admin/login')
-    await page.fill('input[type="text"]', 'admin')
+    await page.fill('input[type="text"]', 'fenny_studio_super_admin')
     await page.fill('input[type="password"]', 'admin123')
     await page.click('button[type="submit"]')
     await page.waitForURL('**/admin/courses', { timeout: 5000 })
@@ -108,7 +108,7 @@ test.describe('後台課程管理', () => {
 test.describe('後台詢問列表', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/admin/login')
-    await page.fill('input[type="text"]', 'admin')
+    await page.fill('input[type="text"]', 'fenny_studio_super_admin')
     await page.fill('input[type="password"]', 'admin123')
     await page.click('button[type="submit"]')
     await page.waitForURL('**/admin/courses', { timeout: 5000 })
@@ -147,7 +147,7 @@ test.describe('端對端流程', () => {
 
     // Step 2: Login to admin
     await page.goto('/admin/login')
-    await page.fill('input[type="text"]', 'admin')
+    await page.fill('input[type="text"]', 'fenny_studio_super_admin')
     await page.fill('input[type="password"]', 'admin123')
     await page.click('button[type="submit"]')
     await page.waitForURL('**/admin/courses', { timeout: 5000 })
