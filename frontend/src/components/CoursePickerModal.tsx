@@ -139,17 +139,6 @@ export default function CoursePickerModal({
                         <p className="font-medium text-gray-900 text-sm truncate">
                           {c.name}
                         </p>
-                        {c.product_url && (
-                          <a
-                            href={c.product_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-block mt-0.5 text-xs text-amber-600 hover:text-amber-700"
-                          >
-                            看完整介紹 ↗
-                          </a>
-                        )}
                       </div>
                     </div>
                   )
