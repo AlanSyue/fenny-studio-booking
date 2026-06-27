@@ -29,10 +29,11 @@ func main() {
 	defer pool.Close()
 
 	wooClient := service.New(cfg)
+	telegramNotifier := service.NewTelegramNotifier(cfg.TelegramBotToken, cfg.TelegramChatID)
 
 	authHandler := handler.NewAuthHandler(pool, cfg)
 	courseHandler := handler.NewCourseHandler(pool, cfg, wooClient)
-	inquiryHandler := handler.NewInquiryHandler(pool)
+	inquiryHandler := handler.NewInquiryHandler(pool, telegramNotifier)
 	ogImageHandler := handler.NewOGImageHandler(cfg)
 
 	r := chi.NewRouter()

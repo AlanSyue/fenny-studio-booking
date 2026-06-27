@@ -3,21 +3,24 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/AlanSyue/fenny-studio-booking/backend/model"
+	"github.com/AlanSyue/fenny-studio-booking/backend/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type InquiryHandler struct {
-	db *pgxpool.Pool
+	db       *pgxpool.Pool
+	notifier *service.Notifier
 }
 
-func NewInquiryHandler(db *pgxpool.Pool) *InquiryHandler {
-	return &InquiryHandler{db: db}
+func NewInquiryHandler(db *pgxpool.Pool, notifier *service.Notifier) *InquiryHandler {
+	return &InquiryHandler{db: db, notifier: notifier}
 }
 
 type createInquiryRequest struct {
@@ -128,6 +131,15 @@ func (h *InquiryHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to commit inquiry")
 		return
 	}
+
+	// Notify admin via Telegram asynchronously. Failure must never affect the
+	// 201 response, so it runs in its own goroutine and only logs on error. The
+	// notifier uses context.Background() internally so it survives request end.
+	go func(inq model.Inquiry) {
+		if err := h.notifier.NotifyInquiry(inq); err != nil {
+			log.Printf("telegram notify inquiry %d failed: %v", inq.ID, err)
+		}
+	}(inquiry)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
