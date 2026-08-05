@@ -7,6 +7,7 @@ export default function InquiryList() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'processed'>('all')
+  const [search, setSearch] = useState('')
 
   const fetchInquiries = async () => {
     try {
@@ -32,10 +33,13 @@ export default function InquiryList() {
     }
   }
 
+  const keyword = search.trim().toLowerCase()
   const filtered = inquiries.filter((inq) => {
-    if (filter === 'pending') return !inq.is_processed
-    if (filter === 'processed') return inq.is_processed
-    return true
+    if (filter === 'pending' && inq.is_processed) return false
+    if (filter === 'processed' && !inq.is_processed) return false
+    if (!keyword) return true
+    return [inq.inquiry_no, inq.name ?? '', inq.email]
+      .some((field) => field.toLowerCase().includes(keyword))
   })
 
   const formatDate = (dateStr: string) => {
@@ -50,8 +54,15 @@ export default function InquiryList() {
 
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">詢問列表</h1>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="搜尋編號 / 稱呼 / Email"
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition w-56"
+        />
         <div className="flex gap-2">
           {(['all', 'pending', 'processed'] as const).map((f) => (
             <button
@@ -73,7 +84,7 @@ export default function InquiryList() {
         <p className="text-gray-500">載入中...</p>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p>沒有詢問記錄</p>
+          <p>{keyword ? `找不到符合「${search}」的詢問` : '沒有詢問記錄'}</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -81,6 +92,7 @@ export default function InquiryList() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">編號</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">狀態</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">稱呼</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
@@ -95,6 +107,9 @@ export default function InquiryList() {
               <tbody className="divide-y divide-gray-200">
                 {filtered.map((inq) => (
                   <tr key={inq.id} className={inq.is_processed ? 'bg-gray-50' : ''}>
+                    <td className="px-4 py-3 text-sm font-mono text-gray-700 whitespace-nowrap">
+                      {inq.inquiry_no}
+                    </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleProcessed(inq.id)}
