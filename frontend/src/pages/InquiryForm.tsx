@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../api/client'
-import type { Course } from '../types'
+import type { Course, Inquiry } from '../types'
 import { TAIWAN_REGIONS } from '../data/taiwanRegions'
 import CoursePickerModal from '../components/CoursePickerModal'
+import { buildInquirySummary } from '../lib/inquirySummary'
+import { copyText } from '../lib/clipboard'
+import { LINE_URL } from '../config'
 
 export default function InquiryForm() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [result, setResult] = useState<Inquiry | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
   const [error, setError] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [form, setForm] = useState({
@@ -71,7 +76,7 @@ export default function InquiryForm() {
 
     setLoading(true)
     try {
-      await apiFetch('/api/inquiries', {
+      const created = await apiFetch<Inquiry>('/api/inquiries', {
         method: 'POST',
         body: JSON.stringify({
           name: form.name,
@@ -85,7 +90,7 @@ export default function InquiryForm() {
           additional_contact: form.additional_contact || null,
         }),
       })
-      setSubmitted(true)
+      setResult(created)
     } catch (err) {
       setError('提交失敗，請稍後再試')
     } finally {
@@ -96,16 +101,71 @@ export default function InquiryForm() {
   const districts =
     TAIWAN_REGIONS.find((r) => r.city === form.city)?.districts ?? []
 
-  if (submitted) {
+  const handleCopy = async () => {
+    if (!result) return
+    const ok = await copyText(buildInquirySummary(result))
+    if (ok) {
+      setCopied(true)
+      setCopyFailed(false)
+      setTimeout(() => setCopied(false), 2000)
+    } else {
+      setCopyFailed(true)
+    }
+  }
+
+  if (result) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-5xl mb-4">✨</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">感謝您的詢問！</h2>
-          <p className="text-gray-600">我們會盡快與您聯繫。</p>
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">已收到您的詢問！</h2>
+
+          <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mb-5">
+            <p className="text-xs text-amber-700 mb-1">詢問編號</p>
+            <p className="text-xl font-bold font-mono tracking-wider text-amber-900">
+              {result.inquiry_no}
+            </p>
+          </div>
+
+          <p className="text-gray-600 mb-1">我們通常會於 1 個工作天內回覆。</p>
+          <p className="text-gray-600 mb-5">
+            為了加快討論，請加入 LINE 官方帳號，並把詢問編號傳給我們。
+          </p>
+
+          {LINE_URL && (
+            <a
+              href={LINE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-lg bg-[#06C755] px-4 py-3 font-bold text-white hover:bg-[#05b34c] transition"
+            >
+              加入 LINE 官方帳號
+            </a>
+          )}
+
+          <button
+            onClick={handleCopy}
+            className="mt-3 w-full rounded-lg border border-gray-300 px-4 py-2.5 font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+          >
+            {copied ? '已複製 ✓' : '複製詢問內容給店家'}
+          </button>
+
+          {copyFailed && (
+            <div className="mt-3 text-left">
+              <p className="text-xs text-gray-500 mb-1">
+                無法自動複製，請長按下方文字複製：
+              </p>
+              <pre className="whitespace-pre-wrap break-words rounded-lg bg-gray-50 border border-gray-200 p-3 text-xs text-gray-700 select-all">
+                {buildInquirySummary(result)}
+              </pre>
+            </div>
+          )}
+
           <button
             onClick={() => {
-              setSubmitted(false)
+              setResult(null)
+              setCopied(false)
+              setCopyFailed(false)
               resetForm()
             }}
             className="mt-6 text-amber-600 hover:text-amber-700 font-medium cursor-pointer"
