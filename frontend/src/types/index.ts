@@ -12,6 +12,7 @@ export interface Course {
 
 export interface Inquiry {
   id: number
+  inquiry_no: string
   name: string | null
   email: string
   // Legacy single-course fields — kept for back-compat with older rows
