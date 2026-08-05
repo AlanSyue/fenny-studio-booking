@@ -4,6 +4,7 @@ import "time"
 
 type Inquiry struct {
 	ID                int       `json:"id"`
+	InquiryNo         string    `json:"inquiry_no"`
 	Name              *string   `json:"name"`
 	Email             string    `json:"email"`
 	CourseID          *int      `json:"course_id"`

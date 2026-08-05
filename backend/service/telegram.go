@@ -83,7 +83,12 @@ func (n *Notifier) NotifyInquiry(inquiry model.Inquiry) error {
 func buildInquiryMessage(inquiry model.Inquiry) string {
 	var b strings.Builder
 
-	b.WriteString("📩 <b>收到新詢問</b>\n")
+	b.WriteString("📩 <b>收到新詢問</b>")
+	if no := strings.TrimSpace(inquiry.InquiryNo); no != "" {
+		b.WriteString(" ")
+		b.WriteString(html.EscapeString(no))
+	}
+	b.WriteString("\n")
 
 	appendField(&b, "姓名", derefString(inquiry.Name))
 	appendField(&b, "Email", inquiry.Email)

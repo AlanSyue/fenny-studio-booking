@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/AlanSyue/fenny-studio-booking/backend/model"
 	"github.com/AlanSyue/fenny-studio-booking/backend/service"
@@ -76,13 +77,20 @@ func (h *InquiryHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback(ctx)
 
+	inquiryNo, err := service.NextInquiryNo(ctx, tx, time.Now())
+	if err != nil {
+		log.Printf("reserve inquiry number failed: %v", err)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to create inquiry")
+		return
+	}
+
 	var inquiry model.Inquiry
 	err = tx.QueryRow(ctx,
-		`INSERT INTO inquiries (name, email, course_id, headcount, city, district, address, budget, additional_contact)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		 RETURNING id, name, email, course_id, headcount, city, district, address, budget, additional_contact, is_processed, created_at`,
-		req.Name, req.Email, req.CourseID, req.Headcount, req.City, req.District, req.Address, req.Budget, req.AdditionalContact,
-	).Scan(&inquiry.ID, &inquiry.Name, &inquiry.Email, &inquiry.CourseID, &inquiry.Headcount,
+		`INSERT INTO inquiries (inquiry_no, name, email, course_id, headcount, city, district, address, budget, additional_contact)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		 RETURNING id, inquiry_no, name, email, course_id, headcount, city, district, address, budget, additional_contact, is_processed, created_at`,
+		inquiryNo, req.Name, req.Email, req.CourseID, req.Headcount, req.City, req.District, req.Address, req.Budget, req.AdditionalContact,
+	).Scan(&inquiry.ID, &inquiry.InquiryNo, &inquiry.Name, &inquiry.Email, &inquiry.CourseID, &inquiry.Headcount,
 		&inquiry.City, &inquiry.District, &inquiry.Address, &inquiry.Budget,
 		&inquiry.AdditionalContact, &inquiry.IsProcessed, &inquiry.CreatedAt)
 	if err != nil {
@@ -177,7 +185,7 @@ func (h *InquiryHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	rows, err := h.db.Query(ctx,
-		`SELECT i.id, i.name, i.email, i.course_id, i.headcount, i.city, i.district, i.address, i.budget,
+		`SELECT i.id, i.inquiry_no, i.name, i.email, i.course_id, i.headcount, i.city, i.district, i.address, i.budget,
 		        i.additional_contact, i.is_processed, i.created_at
 		 FROM inquiries i
 		 ORDER BY i.created_at DESC`,
@@ -192,7 +200,7 @@ func (h *InquiryHandler) List(w http.ResponseWriter, r *http.Request) {
 	ids := []int{}
 	for rows.Next() {
 		var inq model.Inquiry
-		if err := rows.Scan(&inq.ID, &inq.Name, &inq.Email, &inq.CourseID, &inq.Headcount,
+		if err := rows.Scan(&inq.ID, &inq.InquiryNo, &inq.Name, &inq.Email, &inq.CourseID, &inq.Headcount,
 			&inq.City, &inq.District, &inq.Address, &inq.Budget,
 			&inq.AdditionalContact, &inq.IsProcessed, &inq.CreatedAt); err != nil {
 			http.Error(w, "Failed to scan inquiry", http.StatusInternalServerError)
@@ -258,9 +266,9 @@ func (h *InquiryHandler) ToggleProcessed(w http.ResponseWriter, r *http.Request)
 	var inquiry model.Inquiry
 	err = h.db.QueryRow(r.Context(),
 		`UPDATE inquiries SET is_processed = NOT is_processed WHERE id = $1
-		 RETURNING id, name, email, course_id, headcount, city, district, address, budget, additional_contact, is_processed, created_at`,
+		 RETURNING id, inquiry_no, name, email, course_id, headcount, city, district, address, budget, additional_contact, is_processed, created_at`,
 		id,
-	).Scan(&inquiry.ID, &inquiry.Name, &inquiry.Email, &inquiry.CourseID, &inquiry.Headcount,
+	).Scan(&inquiry.ID, &inquiry.InquiryNo, &inquiry.Name, &inquiry.Email, &inquiry.CourseID, &inquiry.Headcount,
 		&inquiry.City, &inquiry.District, &inquiry.Address, &inquiry.Budget,
 		&inquiry.AdditionalContact, &inquiry.IsProcessed, &inquiry.CreatedAt)
 	if err != nil {
