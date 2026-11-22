@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -50,22 +51,20 @@ func writeJSONError(w http.ResponseWriter, status int, msg string) {
 
 // Create handles public inquiry form submission
 func (h *InquiryHandler) Create(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxInquiryBodyBytes)
 	var req createInquiryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeJSONError(w, http.StatusRequestEntityTooLarge, "Request body too large")
+			return
+		}
 		writeJSONError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	if req.Email == "" {
-		writeJSONError(w, http.StatusBadRequest, "Email is required")
-		return
-	}
-	if req.City == nil || *req.City == "" {
-		writeJSONError(w, http.StatusBadRequest, "City is required")
-		return
-	}
-	if req.District == nil || *req.District == "" {
-		writeJSONError(w, http.StatusBadRequest, "District is required")
+	if err := validateInquiry(&req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
