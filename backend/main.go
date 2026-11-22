@@ -51,9 +51,12 @@ func main() {
 	}))
 
 	// Public routes
-	r.Post("/api/auth/login", authHandler.Login)
+	// In-app per-IP rate limits (defense in depth behind nginx limit_req).
+	loginLimiter := middleware.NewIPRateLimiter(5, 5)   // 5/min, burst 5
+	inquiryLimiter := middleware.NewIPRateLimiter(3, 5) // 3/min, burst 5
+	r.With(loginLimiter.Middleware).Post("/api/auth/login", authHandler.Login)
 	r.Get("/api/courses", courseHandler.ListActive)
-	r.Post("/api/inquiries", inquiryHandler.Create)
+	r.With(inquiryLimiter.Middleware).Post("/api/inquiries", inquiryHandler.Create)
 
 	// Admin routes (JWT protected)
 	r.Route("/api/admin", func(r chi.Router) {
@@ -71,8 +74,8 @@ func main() {
 		r.Patch("/inquiries/{id}", inquiryHandler.ToggleProcessed)
 	})
 
-	// Serve uploaded files
-	fileServer := http.FileServer(http.Dir(cfg.UploadDir))
+	// Serve uploaded files (no directory listings)
+	fileServer := http.FileServer(handler.NoDirFileSystem{FS: http.Dir(cfg.UploadDir)})
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))
 
 	log.Printf("Server starting on :%s", cfg.Port)
